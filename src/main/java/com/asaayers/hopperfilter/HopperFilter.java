@@ -9,10 +9,12 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Hopper;
 import org.bukkit.block.Sign;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
@@ -185,22 +187,30 @@ public class HopperFilter extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onInventoryMoveItemEvent(InventoryMoveItemEvent event) {
-
         if (event.getDestination().getHolder() instanceof Hopper) {
             Hopper hopper = (Hopper) event.getDestination().getHolder();
+            hopperHandler(hopper, event.getItem(), event);
+        }
+    }
 
-            List<Matcher> matchers = findSign(hopper.getLocation().getBlock());
+    @EventHandler
+    public void onInventoryPickupItemEvent(InventoryPickupItemEvent event) {
+        if (event.getInventory().getHolder() instanceof Hopper) {
+            Hopper hopper = (Hopper) event.getInventory().getHolder();
+            hopperHandler(hopper, event.getItem().getItemStack(), event);
+        }
+    }
 
-            if (matchers != null) {
-                ItemStack item = event.getItem();
+    private void hopperHandler(Hopper hopper, ItemStack item, Cancellable event) {
+        List<Matcher> matchers = findSign(hopper.getLocation().getBlock());
 
-                for (Matcher matcher : matchers) {
-                    if (matcher.match(item)) {
-                        return;
-                    }
+        if (matchers != null) {
+            for (Matcher matcher : matchers) {
+                if (matcher.match(item)) {
+                    return;
                 }
-                event.setCancelled(true);
             }
+            event.setCancelled(true);
         }
     }
 
