@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.asaayers.hopperfilter</groupId>
 	<artifactId>HopperFilter</artifactId>
-	<version>0.0.1</version>
+	<version>0.0.2</version>
 	<build>
 		<plugins>
 			<plugin>
@@ -16,8 +16,18 @@
 				</configuration>
 			</plugin>
 		</plugins>
-	</build>
-	<repositories>
+        <resources>
+            <resource>
+                <targetPath>.</targetPath>
+                <filtering>true</filtering>
+                <directory>${basedir}/src/main/resources/</directory>
+                <includes>
+                    <include>plugin.yml</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+    <repositories>
 		<repository>
 			<id>bukkit-repo</id>
 			<url>http://repo.bukkit.org/content/groups/public/</url>
