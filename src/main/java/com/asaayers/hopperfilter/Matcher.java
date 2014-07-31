@@ -11,7 +11,20 @@ class Matcher {
     public final boolean negative;
     public final String name;
     public final Integer id;
-    public final Integer dataId;
+    public final short dataId;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        return toString().equals(o.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
 
     Matcher(String str) {
         str = str.trim().toUpperCase();
@@ -33,21 +46,24 @@ class Matcher {
         id = tmpId;
 
         if (parts.length == 2) {
-            dataId = Integer.parseInt(parts[1]);
+            dataId = Short.parseShort(parts[1]);
         } else {
-            dataId = null;
+            dataId = 0;
         }
     }
 
     public Matcher(ItemStack inHand) {
         id = inHand.getTypeId();
         name = null;
-        dataId = null;
+        dataId = inHand.getDurability();
         negative = false;
     }
 
     public String toString() {
         if (id != null) {
+            if (dataId > 0) {
+                return id.toString() + ":" + dataId;
+            }
             return id.toString();
         }
         return name;
@@ -61,13 +77,17 @@ class Matcher {
         item.getType().getId();
 
         if (getId() != null && getId() == item.getTypeId()) {
-            if (dataId == null || dataId == item.getData().getData()) {
+            if (dataId == 0 || dataId == item.getData().getData()) {
                 return true;
             }
         }
 
         Material mat = Material.getMaterial(name);
         return (mat != null && mat.getId() == item.getTypeId());
+    }
+
+    public ItemStack getItemStack() {
+        return new ItemStack(getMaterial(), 1, dataId);
     }
 
     public Material getMaterial() {

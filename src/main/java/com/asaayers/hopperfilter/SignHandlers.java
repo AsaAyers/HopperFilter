@@ -10,6 +10,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.MaterialData;
 
 import java.util.*;
 
@@ -27,9 +28,10 @@ public class SignHandlers implements Listener {
         inventories = new HashMap<>();
     }
 
-    public static List<Matcher> extractIds(Sign sign) {
+    public static Set<Matcher> extractIds(Sign sign) {
         if (sign.getLine(0).trim().equalsIgnoreCase("[Filter]")) {
-            List<Matcher> matchers = new ArrayList<>();
+
+            Set<Matcher> matchers = new HashSet<>();
             for (String str : sign.getLine(1).split(",")) {
                 if (str.trim().length() > 0) {
                     matchers.add(new Matcher(str));
@@ -80,24 +82,27 @@ public class SignHandlers implements Listener {
         return inventories.get(clickedBlock);
     }
 
-    private void populate(Inventory inventory, List<Matcher> matchers) {
+    private void populate(Inventory inventory, Set<Matcher> matchers) {
         inventory.clear();
         for (Matcher matcher : matchers) {
-            ItemStack stack = new ItemStack(matcher.getMaterial());
-            inventory.addItem(stack);
+            inventory.addItem(matcher.getItemStack());
         }
     }
 
     @EventHandler
     public void onInventoryClickEvent(InventoryClickEvent event) {
-        plugin.getLogger().info("click " + event.getSlot() + " " + event.getSlotType()
-                + " " + event.getRawSlot());
+
 
         Sign sign = findSign(event.getInventory());
         if (sign != null) {
             event.setCancelled(true);
             ItemStack item = event.getCurrentItem();
-            List<Matcher> matchers = extractIds(sign);
+            if (item.getType() == Material.AIR) {
+                return;
+            }
+            plugin.getLogger().info("click " + event.getSlot() + " " + event.getSlotType()
+                    + " " + event.getRawSlot());
+            Set<Matcher> matchers = extractIds(sign);
 
             if (event.getRawSlot() >= FILTER_SIZE) {
                 // Add the item to the sign
@@ -135,12 +140,12 @@ public class SignHandlers implements Listener {
         return null;
     }
 
-    private boolean writeSign(Sign sign, List<Matcher> matchers) {
+    private boolean writeSign(Sign sign, Set<Matcher> matchers) {
         int index = 0;
         boolean needComma = false;
         String[] lines = {"", "", ""};
 
-        for (Matcher matcher : matchers) {
+        for (Matcher matcher : new HashSet<>(matchers)) {
             String tmp = needComma ? "," : "";
             tmp += matcher.toString();
 
