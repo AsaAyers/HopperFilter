@@ -6,11 +6,15 @@ import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.metadata.MetadataValueAdapter;
+import org.bukkit.metadata.Metadatable;
 
 import java.util.*;
 
@@ -19,6 +23,7 @@ import java.util.*;
  */
 public class SignHandlers implements Listener {
     public static final int FILTER_SIZE = 54;
+    public static final String FILTER_INVENTORY = "HopperFilterInventory";
     private final HopperFilter plugin;
 
     Map<Block, Inventory> inventories;
@@ -69,17 +74,44 @@ public class SignHandlers implements Listener {
         }
     }
 
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        plugin.getLogger().info("onBlockBreak");
+        if (event.getBlock().hasMetadata(FILTER_INVENTORY)) {
+            plugin.getLogger().info("Removing " + FILTER_INVENTORY);
+            event.getBlock().removeMetadata(FILTER_INVENTORY, plugin);
+        }
+    }
+
+    private Object getMeta(Metadatable obj, String key) {
+        List<MetadataValue> meta = obj.getMetadata(key);
+
+        for (MetadataValue item: meta) {
+            if (item.getOwningPlugin() == plugin) {
+                return item.value();
+            }
+        }
+        return null;
+    }
+
     private Inventory getInventoryForSign(Block clickedBlock) {
         Inventory inventory;
 
-        if (!inventories.containsKey(clickedBlock)) {
+        Object foo = getMeta(clickedBlock, FILTER_INVENTORY);
+
+        if (foo instanceof Inventory) {
+            plugin.getLogger().info("Inventory from meta");
+            inventory = (Inventory) foo;
+        } else {
+            plugin.getLogger().info("Creating inventory");
             inventory = plugin.getServer().createInventory(null, FILTER_SIZE, "[Filter]");
             Sign sign = (Sign) clickedBlock.getState();
             populate(inventory, extractIds(sign));
             inventories.put(clickedBlock, inventory);
+            clickedBlock.setMetadata(FILTER_INVENTORY, new FixedMetadataValue(plugin, inventory));
         }
 
-        return inventories.get(clickedBlock);
+        return inventory;
     }
 
     private void populate(Inventory inventory, Set<Matcher> matchers) {
@@ -104,24 +136,35 @@ public class SignHandlers implements Listener {
                     + " " + event.getRawSlot());
             Set<Matcher> matchers = extractIds(sign);
 
+            // Remove the item from the sign
+            Matcher found = null;
             if (event.getRawSlot() >= FILTER_SIZE) {
                 // Add the item to the sign
-                matchers.add(new Matcher(item));
-            } else {
-                // Remove the item from the sign
-                Matcher found = null;
 
+                for (Matcher matcher : matchers) {
+                    // If the filter already contains the generic form of this
+                    // item, remove it and replace it with an exact match.
+                    if (matcher.match(item) && matcher.dataId == 0) {
+                        found = matcher;
+                    }
+                }
+                if (found == null) {
+                    // Force the generic to go into the filter first
+                    matchers.add(new Matcher(item, (short)0));
+                } else {
+                    matchers.add(new Matcher(item));
+                }
+            } else {
                 for (Matcher matcher : matchers) {
                     if (matcher.match(item)) {
                         found = matcher;
                     }
                 }
+            }
+            plugin.getLogger().info("remove " + found);
 
-                plugin.getLogger().info("remove " + found);
-
-                if (found != null) {
-                    matchers.remove(found);
-                }
+            if (found != null) {
+                matchers.remove(found);
             }
             writeSign(sign, matchers);
             populate(event.getInventory(), matchers);
