@@ -9,6 +9,7 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by asa on 7/30/14.
@@ -38,7 +39,7 @@ public class ItemHandlers implements Listener {
     }
 
     private void hopperHandler(Hopper hopper, ItemStack item, Cancellable event) {
-        List<Matcher> matchers = plugin.findSign(hopper.getLocation().getBlock());
+        Set<Matcher> matchers = plugin.findSign(hopper.getLocation().getBlock());
 
         if (matchers != null) {
             for (Matcher matcher : matchers) {

@@ -52,11 +52,15 @@ class Matcher {
         }
     }
 
-    public Matcher(ItemStack inHand) {
-        id = inHand.getTypeId();
+    public Matcher(ItemStack item, short dataId) {
+        id = item.getTypeId();
+        this.dataId = dataId;
         name = null;
-        dataId = inHand.getDurability();
         negative = false;
+    }
+
+    public Matcher(ItemStack item) {
+        this(item, item.getDurability());
     }
 
     public String toString() {
@@ -77,7 +81,7 @@ class Matcher {
         item.getType().getId();
 
         if (getId() != null && getId() == item.getTypeId()) {
-            if (dataId == 0 || dataId == item.getData().getData()) {
+            if (dataId == 0 || dataId == item.getDurability()) {
                 return true;
             }
         }

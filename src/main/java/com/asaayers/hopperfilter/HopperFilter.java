@@ -13,6 +13,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -37,7 +38,7 @@ public class HopperFilter extends JavaPlugin implements Listener {
     public void onDisable() {
     }
 
-    public List<Matcher> findSign(Block block) {
+    public Set<Matcher> findSign(Block block) {
 
         for (BlockFace direction : signDirections) {
             Block sign = block.getRelative(direction);
@@ -55,7 +56,7 @@ public class HopperFilter extends JavaPlugin implements Listener {
                     if (direction == s.getFacing()) {
 
                         // extractIds will make sure it starts with [Filter]
-                        List<Matcher> ids = SignHandlers.extractIds((Sign) sign.getState());
+                        Set<Matcher> ids = SignHandlers.extractIds((Sign) sign.getState());
                         if (ids != null) {
                             return ids;
                         }
