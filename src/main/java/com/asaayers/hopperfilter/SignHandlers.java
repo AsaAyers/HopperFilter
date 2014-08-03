@@ -37,19 +37,17 @@ public class SignHandlers implements Listener {
         if (sign.getLine(0).trim().equalsIgnoreCase("[Filter]")) {
 
             Set<Matcher> matchers = new HashSet<>();
-            for (String str : sign.getLine(1).split(",")) {
-                if (str.trim().length() > 0) {
-                    matchers.add(new Matcher(str));
-                }
-            }
-            for (String str : sign.getLine(2).split(",")) {
-                if (str.trim().length() > 0) {
-                    matchers.add(new Matcher(str));
-                }
-            }
-            for (String str : sign.getLine(3).split(",")) {
-                if (str.trim().length() > 0) {
-                    matchers.add(new Matcher(str));
+
+            for (int i = 1; i <= 3; i++) {
+                for (String str : sign.getLine(i).split(",")) {
+                    if (str.trim().length() > 0) {
+                        Matcher m = new Matcher(str);
+
+                        // Verify that it produces a valid item.
+                        if (m.getItemStack() != null) {
+                            matchers.add(m);
+                        }
+                    }
                 }
             }
             return matchers;
@@ -62,8 +60,8 @@ public class SignHandlers implements Listener {
     public void onPlayerInteractEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
 
-        if (event.getPlayer().isSneaking()
-                && event.getAction() == Action.RIGHT_CLICK_BLOCK
+        if (event.getPlayer().getItemInHand().getType() == Material.AIR
+                && event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
                 && clickedBlock.getType() == Material.WALL_SIGN
                 && clickedBlock.getState() instanceof Sign) {
             Inventory inventory = getInventoryForSign(clickedBlock);
@@ -129,43 +127,51 @@ public class SignHandlers implements Listener {
         if (sign != null) {
             event.setCancelled(true);
             ItemStack item = event.getCurrentItem();
-            if (item.getType() == Material.AIR) {
+            if (item == null || item.getType() == Material.AIR) {
                 return;
             }
-            plugin.getLogger().info("click " + event.getSlot() + " " + event.getSlotType()
-                    + " " + event.getRawSlot());
+            plugin.getLogger().info("click " + item.toString());
             Set<Matcher> matchers = extractIds(sign);
 
+
+
             // Remove the item from the sign
-            Matcher found = null;
+
             if (event.getRawSlot() >= FILTER_SIZE) {
                 // Add the item to the sign
+
+                Matcher generic = null;
 
                 for (Matcher matcher : matchers) {
                     // If the filter already contains the generic form of this
                     // item, remove it and replace it with an exact match.
                     if (matcher.match(item) && matcher.dataId == 0) {
-                        found = matcher;
+                        generic = matcher;
                     }
                 }
-                if (found == null) {
+                if (event.isShiftClick()) {
+                    if (generic != null) {
+                        matchers.remove(generic);
+                    }
+                    matchers.add(new Matcher(item));
+                } else if (generic == null) {
                     // Force the generic to go into the filter first
                     matchers.add(new Matcher(item, (short)0));
-                } else {
-                    matchers.add(new Matcher(item));
                 }
             } else {
+                Matcher found = null;
                 for (Matcher matcher : matchers) {
                     if (matcher.match(item)) {
                         found = matcher;
                     }
                 }
-            }
-            plugin.getLogger().info("remove " + found);
+                plugin.getLogger().info("remove " + found);
 
-            if (found != null) {
-                matchers.remove(found);
+                if (found != null) {
+                    matchers.remove(found);
+                }
             }
+
             writeSign(sign, matchers);
             populate(event.getInventory(), matchers);
         }
@@ -192,7 +198,7 @@ public class SignHandlers implements Listener {
             String tmp = needComma ? "," : "";
             tmp += matcher.toString();
 
-            if (lines[index].length() + tmp.length() > 16) {
+            if (lines[index].length() + tmp.length() >= 16) {
                 index++;
                 tmp = matcher.toString();
             } else {

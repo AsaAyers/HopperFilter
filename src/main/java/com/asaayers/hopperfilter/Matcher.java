@@ -91,7 +91,11 @@ class Matcher {
     }
 
     public ItemStack getItemStack() {
-        return new ItemStack(getMaterial(), 1, dataId);
+        try {
+            return new ItemStack(getMaterial(), 1, dataId);
+        } catch (NullPointerException exception) {
+            return null;
+        }
     }
 
     public Material getMaterial() {
@@ -105,5 +109,6 @@ class Matcher {
 
         return material;
     }
+
 }
 
