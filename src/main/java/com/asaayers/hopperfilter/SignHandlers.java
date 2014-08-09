@@ -7,20 +7,17 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
-import org.bukkit.metadata.MetadataValueAdapter;
 import org.bukkit.metadata.Metadatable;
 
 import java.util.*;
 
-/**
- * Created by asa on 7/30/14.
- */
 public class SignHandlers implements Listener {
     public static final int FILTER_SIZE = 54;
     public static final String FILTER_INVENTORY = "HopperFilterInventory";
@@ -57,16 +54,30 @@ public class SignHandlers implements Listener {
     }
 
     @EventHandler
+    public void onBlockPlaceEvent(BlockPlaceEvent event) {
+        Block clickedBlock = event.getBlockAgainst();
+
+        if (clickedBlock.getType() == Material.WALL_SIGN
+                && clickedBlock.getState() instanceof Sign) {
+            Inventory inventory = getInventoryForSign(clickedBlock);
+            if (inventory != null) {
+                event.getPlayer().openInventory(inventory);
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
     public void onPlayerInteractEvent(PlayerInteractEvent event) {
         Block clickedBlock = event.getClickedBlock();
 
-        if (event.getPlayer().getItemInHand().getType() == Material.AIR
-                && event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
+        if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
                 && clickedBlock.getType() == Material.WALL_SIGN
                 && clickedBlock.getState() instanceof Sign) {
             Inventory inventory = getInventoryForSign(clickedBlock);
             if (inventory != null) {
                 event.getPlayer().openInventory(inventory);
+                event.setCancelled(true);
             }
 
         }
@@ -74,9 +85,7 @@ public class SignHandlers implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        plugin.getLogger().info("onBlockBreak");
         if (event.getBlock().hasMetadata(FILTER_INVENTORY)) {
-            plugin.getLogger().info("Removing " + FILTER_INVENTORY);
             event.getBlock().removeMetadata(FILTER_INVENTORY, plugin);
         }
     }
@@ -84,7 +93,7 @@ public class SignHandlers implements Listener {
     private Object getMeta(Metadatable obj, String key) {
         List<MetadataValue> meta = obj.getMetadata(key);
 
-        for (MetadataValue item: meta) {
+        for (MetadataValue item : meta) {
             if (item.getOwningPlugin() == plugin) {
                 return item.value();
             }
@@ -98,10 +107,8 @@ public class SignHandlers implements Listener {
         Object foo = getMeta(clickedBlock, FILTER_INVENTORY);
 
         if (foo instanceof Inventory) {
-            plugin.getLogger().info("Inventory from meta");
             inventory = (Inventory) foo;
         } else {
-            plugin.getLogger().info("Creating inventory");
             inventory = plugin.getServer().createInventory(null, FILTER_SIZE, "[Filter]");
             Sign sign = (Sign) clickedBlock.getState();
             populate(inventory, extractIds(sign));
@@ -130,9 +137,7 @@ public class SignHandlers implements Listener {
             if (item == null || item.getType() == Material.AIR) {
                 return;
             }
-            plugin.getLogger().info("click " + item.toString());
             Set<Matcher> matchers = extractIds(sign);
-
 
 
             // Remove the item from the sign
@@ -156,7 +161,7 @@ public class SignHandlers implements Listener {
                     matchers.add(new Matcher(item));
                 } else if (generic == null) {
                     // Force the generic to go into the filter first
-                    matchers.add(new Matcher(item, (short)0));
+                    matchers.add(new Matcher(item, (short) 0));
                 }
             } else {
                 Matcher found = null;
@@ -165,7 +170,6 @@ public class SignHandlers implements Listener {
                         found = matcher;
                     }
                 }
-                plugin.getLogger().info("remove " + found);
 
                 if (found != null) {
                     matchers.remove(found);

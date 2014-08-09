@@ -13,19 +13,6 @@ class Matcher {
     public final Integer id;
     public final short dataId;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        return toString().equals(o.toString());
-    }
-
-    @Override
-    public int hashCode() {
-        return toString().hashCode();
-    }
-
     Matcher(String str) {
         str = str.trim().toUpperCase();
 
@@ -61,6 +48,19 @@ class Matcher {
 
     public Matcher(ItemStack item) {
         this(item, item.getDurability());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        return toString().equals(o.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
     }
 
     public String toString() {

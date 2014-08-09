@@ -12,7 +12,6 @@ import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 
 
