@@ -9,9 +9,13 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.event.Listener;
 import org.bukkit.material.MaterialData;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.metadata.Metadatable;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -20,7 +24,8 @@ import java.util.Set;
  */
 public class HopperFilter extends JavaPlugin implements Listener {
 
-    private static EnumSet<BlockFace> signDirections = EnumSet.of(
+    public static final String MATCHERS = "HopperFilterMatchers";
+    public static final EnumSet<BlockFace> signDirections = EnumSet.of(
             BlockFace.NORTH,
             BlockFace.SOUTH,
             BlockFace.EAST,
@@ -37,7 +42,32 @@ public class HopperFilter extends JavaPlugin implements Listener {
     public void onDisable() {
     }
 
+    protected Object getMeta(Metadatable obj, String key) {
+        List<MetadataValue> meta = obj.getMetadata(key);
+
+        for (MetadataValue item : meta) {
+            if (item.getOwningPlugin() == this) {
+                return item.value();
+            }
+        }
+        return null;
+    }
+
     public Set<Matcher> findSign(Block block) {
+        Object foo = getMeta(block, MATCHERS);
+
+        if (foo instanceof MetaMatcher) {
+            return ((MetaMatcher) foo).getMatchers();
+        }
+
+        Set<Matcher> matchers = noCacheFindSign(block);
+
+        block.setMetadata(MATCHERS, new FixedMetadataValue(this, new MetaMatcher(matchers)));
+
+        return matchers;
+    }
+
+    public Set<Matcher> noCacheFindSign(Block block) {
 
         for (BlockFace direction : signDirections) {
             Block sign = block.getRelative(direction);

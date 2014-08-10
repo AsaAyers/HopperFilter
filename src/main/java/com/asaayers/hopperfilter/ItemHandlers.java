@@ -7,7 +7,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.MetadataValue;
+import org.bukkit.metadata.Metadatable;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -35,6 +38,17 @@ public class ItemHandlers implements Listener {
             Hopper hopper = (Hopper) event.getInventory().getHolder();
             hopperHandler(hopper, event.getItem().getItemStack(), event);
         }
+    }
+
+    private Object getMeta(Metadatable obj, String key) {
+        List<MetadataValue> meta = obj.getMetadata(key);
+
+        for (MetadataValue item : meta) {
+            if (item.getOwningPlugin() == plugin) {
+                return item.value();
+            }
+        }
+        return null;
     }
 
     private void hopperHandler(Hopper hopper, ItemStack item, Cancellable event) {

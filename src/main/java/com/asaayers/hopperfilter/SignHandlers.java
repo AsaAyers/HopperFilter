@@ -2,12 +2,14 @@ package com.asaayers.hopperfilter;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
@@ -30,13 +32,13 @@ public class SignHandlers implements Listener {
         inventories = new HashMap<>();
     }
 
-    public static Set<Matcher> extractIds(Sign sign) {
-        if (sign.getLine(0).trim().equalsIgnoreCase("[Filter]")) {
+    public static Set<Matcher> extractIds(String[] lines) {
+        if (lines[0].trim().equalsIgnoreCase("[Filter]")) {
 
             Set<Matcher> matchers = new HashSet<>();
 
             for (int i = 1; i <= 3; i++) {
-                for (String str : sign.getLine(i).split(",")) {
+                for (String str : lines[i].split(",")) {
                     if (str.trim().length() > 0) {
                         Matcher m = new Matcher(str);
 
@@ -53,6 +55,10 @@ public class SignHandlers implements Listener {
         return null;
     }
 
+    public static Set<Matcher> extractIds(Sign sign) {
+        return extractIds(sign.getLines());
+    }
+
     @EventHandler
     public void onBlockPlaceEvent(BlockPlaceEvent event) {
         Block clickedBlock = event.getBlockAgainst();
@@ -64,6 +70,16 @@ public class SignHandlers implements Listener {
                 event.getPlayer().openInventory(inventory);
                 event.setCancelled(true);
             }
+        }
+    }
+
+    @EventHandler
+    public void onSignChangeEvent(SignChangeEvent event) {
+        if (event.getLine(0).trim().equalsIgnoreCase("[filter]")) {
+            event.setLine(0, "[Filter]");
+            clearNearCache(event.getBlock());
+            Inventory inventory = getInventoryForSign(event.getBlock(), event.getLines());
+            event.getPlayer().openInventory(inventory);
         }
     }
 
@@ -85,33 +101,51 @@ public class SignHandlers implements Listener {
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
-        if (event.getBlock().hasMetadata(FILTER_INVENTORY)) {
-            event.getBlock().removeMetadata(FILTER_INVENTORY, plugin);
-        }
+        clearNearCache(event.getBlock());
     }
 
-    private Object getMeta(Metadatable obj, String key) {
-        List<MetadataValue> meta = obj.getMetadata(key);
+    private void clearNearCache(Block block) {
+        String selfMeta = null;
+        String neighborMeta = null;
 
-        for (MetadataValue item : meta) {
-            if (item.getOwningPlugin() == plugin) {
-                return item.value();
+        if (block.getType() == Material.WALL_SIGN) {
+            selfMeta = FILTER_INVENTORY;
+            neighborMeta = HopperFilter.MATCHERS;
+        } else if (block.getType() == Material.HOPPER) {
+            selfMeta = HopperFilter.MATCHERS;
+            neighborMeta = FILTER_INVENTORY;
+        }
+
+        if (selfMeta != null && neighborMeta != null) {
+            if (block.hasMetadata(selfMeta)) {
+                block.removeMetadata(selfMeta, plugin);
+            }
+
+            for (BlockFace direction: HopperFilter.signDirections) {
+                Block neighbor = block.getRelative(direction);
+                if (neighbor.hasMetadata(neighborMeta)) {
+                    neighbor.removeMetadata(neighborMeta, plugin);
+                }
             }
         }
-        return null;
     }
 
     private Inventory getInventoryForSign(Block clickedBlock) {
+        Sign sign = (Sign) clickedBlock.getState();
+
+        return getInventoryForSign(clickedBlock, sign.getLines());
+    }
+
+    private Inventory getInventoryForSign(Block clickedBlock, String[] lines) {
         Inventory inventory;
 
-        Object foo = getMeta(clickedBlock, FILTER_INVENTORY);
+        Object foo = plugin.getMeta(clickedBlock, FILTER_INVENTORY);
 
         if (foo instanceof Inventory) {
             inventory = (Inventory) foo;
         } else {
             inventory = plugin.getServer().createInventory(null, FILTER_SIZE, "[Filter]");
-            Sign sign = (Sign) clickedBlock.getState();
-            populate(inventory, extractIds(sign));
+            populate(inventory, extractIds(lines));
             inventories.put(clickedBlock, inventory);
             clickedBlock.setMetadata(FILTER_INVENTORY, new FixedMetadataValue(plugin, inventory));
         }
@@ -219,6 +253,7 @@ public class SignHandlers implements Listener {
         sign.setLine(2, lines[1]);
         sign.setLine(3, lines[2]);
         sign.update();
+        clearNearCache(sign.getBlock());
         return true;
     }
 
