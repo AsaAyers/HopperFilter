@@ -180,6 +180,7 @@ public class SignHandlers implements Listener {
                 // Add the item to the sign
 
                 Matcher generic = null;
+                Set<Matcher> specifics = new HashSet<>();
 
                 for (Matcher matcher : matchers) {
                     // If the filter already contains the generic form of this
@@ -187,15 +188,24 @@ public class SignHandlers implements Listener {
                     if (matcher.match(item) && matcher.dataId == 0) {
                         generic = matcher;
                     }
+
+                    if (matcher.looseMatch(item)) {
+                        specifics.add(matcher);
+                    }
                 }
-                if (event.isShiftClick()) {
+
+                if (!event.isShiftClick()) {
+                    // regular click adds that specific item. For example
+                    // it adds that exact color of wool.
                     if (generic != null) {
                         matchers.remove(generic);
                     }
                     matchers.add(new Matcher(item));
+
                 } else if (generic == null) {
-                    // Force the generic to go into the filter first
+                    // shift+click to match all wool
                     matchers.add(new Matcher(item, (short) 0));
+                    matchers.removeAll(specifics);
                 }
             } else {
                 Matcher found = null;

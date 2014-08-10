@@ -78,12 +78,19 @@ class Matcher {
     }
 
     public boolean match(ItemStack item) {
-        item.getType().getId();
-
         if (getId() != null && getId() == item.getTypeId()) {
             if (dataId == 0 || dataId == item.getDurability()) {
                 return true;
             }
+        }
+
+        Material mat = Material.getMaterial(name);
+        return (mat != null && mat.getId() == item.getTypeId());
+    }
+
+    public boolean looseMatch(ItemStack item) {
+        if (getId() != null && getId() == item.getTypeId()) {
+            return true;
         }
 
         Material mat = Material.getMaterial(name);

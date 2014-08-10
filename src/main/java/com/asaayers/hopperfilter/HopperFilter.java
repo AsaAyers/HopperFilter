@@ -54,10 +54,10 @@ public class HopperFilter extends JavaPlugin implements Listener {
     }
 
     public Set<Matcher> findSign(Block block) {
-        Object foo = getMeta(block, MATCHERS);
+        Object metaMatcher = getMeta(block, MATCHERS);
 
-        if (foo instanceof MetaMatcher) {
-            return ((MetaMatcher) foo).getMatchers();
+        if (metaMatcher instanceof MetaMatcher) {
+            return ((MetaMatcher) metaMatcher).getMatchers();
         }
 
         Set<Matcher> matchers = noCacheFindSign(block);
