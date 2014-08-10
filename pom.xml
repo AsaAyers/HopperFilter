@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.asaayers.hopperfilter</groupId>
     <artifactId>HopperFilter</artifactId>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.5</version>
     <build>
         <plugins>
             <plugin>
