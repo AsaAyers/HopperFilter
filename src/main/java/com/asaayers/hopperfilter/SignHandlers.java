@@ -1,5 +1,6 @@
 package com.asaayers.hopperfilter;
 
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -76,6 +77,15 @@ public class SignHandlers implements Listener {
     @EventHandler
     public void onSignChangeEvent(SignChangeEvent event) {
         if (event.getLine(0).trim().equalsIgnoreCase("[filter]")) {
+
+            BlockFace direction = plugin.getSignBack(event.getBlock());
+
+            if (direction == null || event.getBlock().getRelative(direction).getType() != Material.HOPPER) {
+                event.getPlayer().sendMessage(ChatColor.RED + "[Filter] signs must be placed against hoppers.");
+                event.setCancelled(true);
+                return;
+            }
+
             event.setLine(0, "[Filter]");
             clearNearCache(event.getBlock());
             Inventory inventory = getInventoryForSign(event.getBlock(), event.getLines());

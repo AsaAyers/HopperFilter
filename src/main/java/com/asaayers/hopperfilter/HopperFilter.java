@@ -72,25 +72,39 @@ public class HopperFilter extends JavaPlugin implements Listener {
         for (BlockFace direction : signDirections) {
             Block sign = block.getRelative(direction);
 
-            // Find any nearby wall sign
-            if (sign.getType() == Material.WALL_SIGN) {
+            // If the WALL_SIGN is NORTH of the hopper and facing NORTH it must
+            // be attached to the hopper.
+            if (direction == getSignDirection(sign)) {
 
-                // So many hoops just to figure out which direction it's facing.
-                MaterialData md = sign.getType().getNewData(sign.getData());
-                if (md instanceof org.bukkit.material.Sign && sign.getState() instanceof Sign) {
-                    org.bukkit.material.Sign s = (org.bukkit.material.Sign) md;
-
-                    // If the WALL_SIGN is NORTH of the hopper and facing NORTH it must
-                    // be attached to the hopper.
-                    if (direction == s.getFacing()) {
-
-                        // extractIds will make sure it starts with [Filter]
-                        Set<Matcher> ids = SignHandlers.extractIds((Sign) sign.getState());
-                        if (ids != null) {
-                            return ids;
-                        }
-                    }
+                // extractIds will make sure it starts with [Filter]
+                Set<Matcher> ids = SignHandlers.extractIds((Sign) sign.getState());
+                if (ids != null) {
+                    return ids;
                 }
+            }
+        }
+        return null;
+    }
+
+    public BlockFace getSignBack(Block sign) {
+        BlockFace front = getSignDirection(sign);
+
+        if (front != null) {
+            return front.getOppositeFace();
+        }
+        return null;
+    }
+
+    public BlockFace getSignDirection(Block sign) {
+        // Find any nearby wall sign
+        if (sign.getType() == Material.WALL_SIGN) {
+
+            // So many hoops just to figure out which direction it's facing.
+            MaterialData md = sign.getType().getNewData(sign.getData());
+            if (md instanceof org.bukkit.material.Sign && sign.getState() instanceof Sign) {
+                org.bukkit.material.Sign s = (org.bukkit.material.Sign) md;
+
+                return s.getFacing();
             }
         }
         return null;
